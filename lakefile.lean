@@ -9,4 +9,10 @@ require mathlib from git
 
 @[default_target]
 lean_lib «LeanBifurcationQuantum» where
-  roots := #[`BifurcationLemmas, `GodelBifurcation, `EverettManyWorlds, `EinsteinRosenBridge, `CommutativeTorus]
+  -- Modules are independent (each defines its own `ShadowState`), so they are
+  -- listed as separate roots rather than imported from one umbrella file.
+  roots := #[`LeanBifurcationQuantum.BifurcationLemmas,
+             `LeanBifurcationQuantum.GodelBifurcation,
+             `LeanBifurcationQuantum.EverettManyWorlds,
+             `LeanBifurcationQuantum.EinsteinRosenBridge,
+             `LeanBifurcationQuantum.CommutativeTorus]
