@@ -2,10 +2,10 @@
 -- Copyright (c) 2026 Ahmad Ali Parr. All rights reserved.
 -- Authored by Ahmad Ali Parr.
 -- Bifurcation Lemmas + Quantum Theorems
--- CORRECTED: Uses real Mathlib (‖M‖ Frobenius norm + Matrix.PosSemidef).
+-- CORRECTED: Uses real Mathlib (‖M‖ Matrix norm instance + Matrix.PosSemidef).
 -- Previous version used invented `Matrix.spectralNorm` which does not exist.
--- The norm here is the Frobenius norm, not the spectral (operator) norm.
--- The proof structures are identical; only the norm differs.
+-- The norm here is Mathlib's `Matrix.normedAddCommGroup`: the entrywise sup norm
+-- (max |Mᵢⱼ|), not the Frobenius norm and not the spectral (operator) norm.
 
 import Mathlib.LinearAlgebra.Matrix.Spectrum
 import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -24,7 +24,7 @@ open Matrix
 /-!
 ## Definitions
 
-The norm ‖M‖ is the Frobenius norm (Mathlib's `Matrix` norm instance).
+The norm ‖M‖ is Mathlib's `Matrix` norm instance, the entrywise sup norm.
 It satisfies: triangle inequality, homogeneity, nonnegativity.
 -/
 
@@ -212,10 +212,10 @@ theorem shadow_iterate_bounded
 ## Summary
 
 CORRECTED version: Uses real Mathlib.
-- ‖M‖ = Frobenius norm (Mathlib `Matrix` norm instance)
+- ‖M‖ = entrywise sup norm (Mathlib `Matrix` norm instance)
 - PSD = `Matrix.PosSemidef` (not `0 ≤ M`)
 - Norm lemmas: `norm_add_le`, `norm_smul`, `norm_nonneg` (real Mathlib)
-- PSD lemmas: `PosSemidef.add`, `PosSemidef.smul` (real Mathlib)
+- PSD lemmas: `PosSemidef.add` (real Mathlib); the scalar case is proved directly
 
 Proved: 11 theorems (projB_in_ball, projB_idempotent, 5 bifurcation, 5 quantum).
 Sorry: 1 (frobenius_mul_le — false for the entrywise sup norm actually in use; see proof comment).

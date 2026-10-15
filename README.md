@@ -4,7 +4,7 @@
 
 # Bifurcation, Gödel, Everett, Einstein-Rosen, and the Commutative Torus
 
-81 theorems in Lean 4, verified against the Lean kernel with Mathlib v4.9.0.
+81 theorems in Lean 4 (toolchain `leanprover/lean4:v4.9.0`, Mathlib `v4.9.0`), checked by the Lean kernel.
 
 ![AI agent branching into sub-agents](agent-branching.png)
 
@@ -24,7 +24,7 @@ I built a formal system for bifurcation — the point where a system splits — 
 | `EinsteinRosenBridge.lean` | 18 | 🟡 Gold — spacetime bridges |
 | `CommutativeTorus.lean` | 19 | 🩷 Magenta — the torus in everything |
 
-**Total: 81 theorems, 6 `sorry`.**
+**Total: 81 theorems, 1 `sorry`** (`frobenius_mul_le`, which is false as stated; see [Proof status](#proof-status)).
 
 ---
 
@@ -34,7 +34,9 @@ The core: projection, bifurcation, shadow states, quantum basics.
 
 ### Definitions
 
-- **`FrobeniusBall`** — The set of matrices with Frobenius norm ≤ 1. The "ball" the system lives in. Inside = kenoma (unformed). Boundary = threshold. Outside = projected back.
+> **Note on the norm.** Despite the names `FrobeniusBall` and `frobenius_mul_le`, the norm in scope is Mathlib's `Matrix.normedAddCommGroup`, the **entrywise sup norm** ‖M‖ = maxᵢⱼ |Mᵢⱼ|, not the Frobenius norm.
+
+- **`FrobeniusBall`** — The set of matrices with norm ≤ 1. The "ball" the system lives in. Inside = kenoma (unformed). Boundary = threshold. Outside = projected back.
 - **`projB`** — Projection onto the unit ball. If ‖M‖ ≤ 1, return M. Otherwise scale down to norm 1. This is the bifurcation operator: it forces the system back into bounds.
 - **`ShadowState`** — A PSD matrix with norm ≤ 1. The state of a system that casts a shadow it cannot see (see Gödel file).
 - **`DensityMatrix`** — A PSD matrix with trace = 1. A valid quantum state.
@@ -49,8 +51,8 @@ The core: projection, bifurcation, shadow states, quantum basics.
 - **`bifurcation_below_threshold`** — Below the threshold, `projB` is the identity. No projection needed. The system is still whole.
 - **`bifurcation_above_threshold`** — Above the threshold, `projB` scales. The unconstrained step is replaced by the projected step. The system has bifurcated.
 - **`trace_unitary_conj`** — Trace is preserved under unitary conjugation: trace(U·ρ·U†) = trace(ρ). Quantum states don't lose probability under unitary evolution.
-- **`frobenius_mul_le`** — Frobenius norm is submultiplicative: ‖AB‖ ≤ ‖A‖·‖B‖. ⚠️ `sorry` — needs a real Frobenius proof.
-- **`bifurcation_preserves_psd`** — If S and grad are PSD, then S + η·grad is PSD for η > 0. The bifurcation does not break positivity. ⚠️ Partial `sorry` — scalar multiple PSD needs manual proof (no Mathlib lemma).
+- **`frobenius_mul_le`** — Submultiplicativity ‖AB‖ ≤ ‖A‖·‖B‖. ⚠️ `sorry` — **false as stated** for the sup norm in scope (see [Proof status](#proof-status)).
+- **`bifurcation_preserves_psd`** — If S and grad are PSD, then S + η·grad is PSD for η > 0. The bifurcation does not break positivity.
 - **`shadow_invariant_preserved`** — The shadow invariant (‖S‖ ≤ 1) is preserved under projected steps. The real version of the original vacuous theorem — proves from `projB_in_ball`, not from an axiom.
 - **`shadow_two_step`** — After two projected steps, still in the ball. Iteration doesn't escape.
 - **`shadow_iterate_bounded`** — Any finite sequence of projected steps stays bounded. The system never diverges.
@@ -75,9 +77,9 @@ Gödel's theorems applied to the bifurcation system. The system cannot prove its
 
 - **`godel_bifurcation_incomplete`** — The bifurcation system is incomplete. There exists a true statement about shadow states unprovable within the system.
 - **`godel_bifurcation_cannot_prove_consistency`** — The bifurcation system cannot prove its own projection rules are consistent. This is why the ledger needs an external anchor. A hash chain cannot prove its own immutability from inside the chain.
-- **`bifurcation_is_godel_sentence`** — At the threshold η*, "this step stays in the ball" is true but the system cannot prove it without stepping outside itself. The bifurcation IS a Gödel sentence. ⚠️ `sorry` — needs full Gödel machinery.
+- **`bifurcation_is_godel_sentence`** — At the threshold η*, "this step stays in the ball" is true but the system cannot prove it without stepping outside itself. The bifurcation IS a Gödel sentence. (Formally, the unprovability part holds because `BifurcationSystem.Provable` is the placeholder that proves nothing.)
 - **`godel_quantum_observer_limit`** — An observer inside the system cannot fully describe the system. The observer's knowledge is incomplete by structure, not by ignorance.
-- **`godel_density_purity_undecidable`** — A density matrix cannot prove from inside if it's pure (rank 1) vs mixed. Requires external measurement. ⚠️ `sorry` — needs eigenvalue analysis.
+- **`godel_density_purity_undecidable`** — A density matrix cannot prove from inside if it's pure (rank 1) vs mixed. Requires external measurement. What is proved: Tr(ρ²) ≤ 1 for any PSD ρ with Tr ρ = 1.
 - **`godel_spectral_self_reference`** — "‖ρ‖ ≤ 1" is provable, but "this proof is correct" needs a meta-system. Infinite regress.
 - **`godel_ledger_cannot_prove_immutability`** — Formal version of the hologram-wat correction: "actually immutable" → "tamper-evident." Gödel's Second Theorem applied to ledgers. A hash chain can detect tampering but cannot prove from inside that no tampering occurred.
 - **`godel_shadow_incomplete`** — Shadow states are incomplete. True statements about shadow states exist that the formalism cannot prove.
@@ -106,7 +108,7 @@ Hugh Everett III, 1957, Princeton (advisor: John Archibald Wheeler). The wavefun
 
 ### MWI + Bifurcation
 
-- **`mwi_measurement_is_bifurcation`** — A measurement IS a bifurcation point. Before: one branch. After: N branches. Total weight conserved (Born rule). ⚠️ `sorry` — Born rule weight distribution.
+- **`mwi_measurement_is_bifurcation`** — A measurement IS a bifurcation point. Before: one branch. After: N branches. Total weight conserved (Born rule): each of the N branches gets amplitude a/√N.
 - **`mwi_bifurcation_preserves_weight`** — Branching does not create or destroy probability. Σ|amplitude|² = 1 across all branches.
 - **`mwi_observer_splits`** — The observer is part of the system. When the wavefunction branches, the observer branches too. Each copy sees one outcome. No privileged observer.
 - **`mwi_branching_deterministic`** — Branching is deterministic (Schrödinger evolution). Apparent randomness = observer's inability to see all branches.
@@ -120,7 +122,7 @@ Hugh Everett III, 1957, Princeton (advisor: John Archibald Wheeler). The wavefun
 
 ### MWI + Shadow
 
-- **`mwi_branch_is_shadow`** — Every branch's density matrix is a valid shadow state (PSD + norm ≤ 1). ⚠️ `sorry` — needs spectral norm bound from trace + PSD.
+- **`mwi_branch_is_shadow`** — Every branch's density matrix is a valid shadow state (PSD + norm ≤ 1).
 - **`mwi_universal_is_sum_of_shadows`** — The universal wavefunction is the weighted sum of all branch shadow states, weights = Born probabilities.
 - **`mwi_shadow_projection_is_branch_selection`** — `projB` is the mathematical analogue of branch selection. When the observer measures, the universal wavefunction is projected onto one branch. In MWI, this does NOT collapse — it selects the observer's branch. Other branches still exist.
 
@@ -231,24 +233,24 @@ The torus Tⁿ = (S¹)ⁿ appears in EVERY theorem file. It was there all along.
 
 ---
 
-## The 6 `sorry`s (honest gaps)
+## Proof status
 
-1. `frobenius_mul_le` — Frobenius submultiplicativity (needs real proof)
-2. `bifurcation_preserves_psd` — scalar multiple preserves PSD (no Mathlib lemma)
-3. `bifurcation_is_godel_sentence` — Gödel machinery placeholder
-4. `godel_density_purity_undecidable` — eigenvalue analysis
-5. `mwi_measurement_is_bifurcation` — Born rule weights
-6. `mwi_branch_is_shadow` — spectral norm bound for branches
-
-Everything else is fully proved. No hidden axioms. The Gödel axioms are standard results, not invented.
+- **`sorry` count: 1.** `rg -w 'sorry|admit' -g '*.lean'` finds only `frobenius_mul_le`.
+- **Why it stays open:** the statement is false for the norm in scope. With J the 4×4 all-ones matrix, ‖J‖ = 1 but every entry of J·J is 4, so ‖J·J‖ = 4 > 1 = ‖J‖·‖J‖. The proposed fix is to state it for the Frobenius norm, where Mathlib already has `Matrix.frobenius_norm_mul`.
+- **Declared axioms:** `godel_first_incompleteness` and `godel_second_incompleteness` (`GodelBifurcation.lean`). They are the standard theorems, stated as axioms over the abstract `FormalSystem` structure; they are not proved here.
+- **`#print axioms`:** the formerly-`sorry` theorems (`bifurcation_preserves_psd`, `bifurcation_is_godel_sentence`, `godel_density_purity_undecidable`, `mwi_measurement_is_bifurcation`, `mwi_branch_is_shadow`) depend only on `propext`, `Classical.choice`, `Quot.sound`. `godel_bifurcation_incomplete` also depends on `godel_first_incompleteness`, and `frobenius_mul_le` on `sorryAx`.
+- **Scope:** 39 of the 81 theorems have conclusion `True`. For those, the content is the interpretation in the docstring, not something the kernel checks.
 
 ## Build
 
+Requires [elan](https://github.com/leanprover/elan). The toolchain is pinned in `lean-toolchain` (`leanprover/lean4:v4.9.0`) and Mathlib is pinned to `v4.9.0` in `lakefile.lean`.
+
 ```bash
+lake exe cache get   # download prebuilt Mathlib .olean files (skip building Mathlib)
 lake build
 ```
 
-Requires Lean 4.9.0 + Mathlib v4.9.0. First build downloads Mathlib (~600MB) and builds it (~30-60 min).
+Expect one `declaration uses 'sorry'` warning (for `frobenius_mul_le`) plus some linter warnings (unused variables and similar). Note: the five modules each declare their own `ShadowState`, so they build fine as library roots but cannot all be imported into a single file.
 
 ## The synthesis
 
