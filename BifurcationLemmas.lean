@@ -161,16 +161,18 @@ theorem trace_unitary_conj
     _ = Matrix.trace (1 * ρ) := by rw [hU']
     _ = Matrix.trace ρ := by rw [Matrix.one_mul]
 
-/-- Quantum Theorem 2: Norm is submultiplicative for Frobenius norm.
-    Note: Frobenius norm is submultiplicative: ‖AB‖ ≤ ‖A‖ * ‖B‖. -/
+/-- Frobenius norm on 4×4 real matrices, ‖M‖_F = √(Σᵢⱼ Mᵢⱼ²), using Mathlib's
+    (non-instance) `Matrix.frobeniusSeminormedAddCommGroup`. Written explicitly so the
+    global entrywise sup-norm instance used elsewhere in this file is unaffected. -/
+noncomputable def frobNorm (M : Matrix (Fin 4) (Fin 4) ℝ) : ℝ :=
+  @Norm.norm _ (Matrix.frobeniusSeminormedAddCommGroup (m := Fin 4) (n := Fin 4) (α := ℝ)).toNorm M
+
+/-- Quantum Theorem 2: The Frobenius norm is submultiplicative: ‖AB‖_F ≤ ‖A‖_F * ‖B‖_F.
+    (For the entrywise sup norm this fails; the all-ones matrix J has ‖J‖ = 1, ‖J*J‖ = 4.) -/
 theorem frobenius_mul_le
     (A B : Matrix (Fin 4) (Fin 4) ℝ) :
-    ‖A * B‖ ≤ ‖A‖ * ‖B‖ := by
-  -- NOT PROVABLE AS STATED. The active instance `Matrix.normedAddCommGroup` is the
-  -- entrywise sup norm, not Frobenius. Counterexample: J = all-ones 4×4 matrix has
-  -- ‖J‖ = 1 but (J * J) i j = 4, so ‖J * J‖ = 4 > 1 = ‖J‖ * ‖J‖.
-  -- Fix: state it for the Frobenius norm (`Matrix.frobenius_norm_mul`).
-  sorry
+    frobNorm (A * B) ≤ frobNorm A * frobNorm B :=
+  Matrix.frobenius_norm_mul A B
 
 /-- Quantum Theorem 3: Bifurcation preserves PSD. -/
 theorem bifurcation_preserves_psd
@@ -217,6 +219,7 @@ CORRECTED version: Uses real Mathlib.
 - Norm lemmas: `norm_add_le`, `norm_smul`, `norm_nonneg` (real Mathlib)
 - PSD lemmas: `PosSemidef.add` (real Mathlib); the scalar case is proved directly
 
-Proved: 11 theorems (projB_in_ball, projB_idempotent, 5 bifurcation, 5 quantum).
-Sorry: 1 (frobenius_mul_le — false for the entrywise sup norm actually in use; see proof comment).
+Proved: 13 theorems (projB_in_ball, projB_idempotent, 5 bifurcation, 6 quantum).
+Sorry: 0. frobenius_mul_le is stated for the Frobenius norm (`frobNorm`) and proved via
+`Matrix.frobenius_norm_mul`.
 -/

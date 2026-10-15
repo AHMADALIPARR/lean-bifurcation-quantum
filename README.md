@@ -24,7 +24,7 @@ I built a formal system for bifurcation — the point where a system splits — 
 | `EinsteinRosenBridge.lean` | 18 | 🟡 Gold — spacetime bridges |
 | `CommutativeTorus.lean` | 19 | 🩷 Magenta — the torus in everything |
 
-**Total: 81 theorems, 1 `sorry`** (`frobenius_mul_le`, which is false as stated; see [Proof status](#proof-status)).
+**Total: 81 theorems, 0 `sorry`.**
 
 ---
 
@@ -34,7 +34,7 @@ The core: projection, bifurcation, shadow states, quantum basics.
 
 ### Definitions
 
-> **Note on the norm.** Despite the names `FrobeniusBall` and `frobenius_mul_le`, the norm in scope is Mathlib's `Matrix.normedAddCommGroup`, the **entrywise sup norm** ‖M‖ = maxᵢⱼ |Mᵢⱼ|, not the Frobenius norm.
+> **Note on the norm.** Despite the name `FrobeniusBall`, the norm ‖·‖ in this file is Mathlib's `Matrix.normedAddCommGroup`, the **entrywise sup norm** ‖M‖ = maxᵢⱼ |Mᵢⱼ|. Only `frobenius_mul_le` uses the Frobenius norm, through the explicit helper `frobNorm`.
 
 - **`FrobeniusBall`** — The set of matrices with norm ≤ 1. The "ball" the system lives in. Inside = kenoma (unformed). Boundary = threshold. Outside = projected back.
 - **`projB`** — Projection onto the unit ball. If ‖M‖ ≤ 1, return M. Otherwise scale down to norm 1. This is the bifurcation operator: it forces the system back into bounds.
@@ -51,7 +51,7 @@ The core: projection, bifurcation, shadow states, quantum basics.
 - **`bifurcation_below_threshold`** — Below the threshold, `projB` is the identity. No projection needed. The system is still whole.
 - **`bifurcation_above_threshold`** — Above the threshold, `projB` scales. The unconstrained step is replaced by the projected step. The system has bifurcated.
 - **`trace_unitary_conj`** — Trace is preserved under unitary conjugation: trace(U·ρ·U†) = trace(ρ). Quantum states don't lose probability under unitary evolution.
-- **`frobenius_mul_le`** — Submultiplicativity ‖AB‖ ≤ ‖A‖·‖B‖. ⚠️ `sorry` — **false as stated** for the sup norm in scope (see [Proof status](#proof-status)).
+- **`frobenius_mul_le`** — The Frobenius norm is submultiplicative: ‖AB‖_F ≤ ‖A‖_F·‖B‖_F, stated with `frobNorm` and proved via Mathlib's `Matrix.frobenius_norm_mul`. (It is false for the sup norm: the all-ones matrix J has ‖J‖ = 1 but ‖J·J‖ = 4.)
 - **`bifurcation_preserves_psd`** — If S and grad are PSD, then S + η·grad is PSD for η > 0. The bifurcation does not break positivity.
 - **`shadow_invariant_preserved`** — The shadow invariant (‖S‖ ≤ 1) is preserved under projected steps. The real version of the original vacuous theorem — proves from `projB_in_ball`, not from an axiom.
 - **`shadow_two_step`** — After two projected steps, still in the ball. Iteration doesn't escape.
@@ -235,10 +235,9 @@ The torus Tⁿ = (S¹)ⁿ appears in EVERY theorem file. It was there all along.
 
 ## Proof status
 
-- **`sorry` count: 1.** `rg -w 'sorry|admit' -g '*.lean'` finds only `frobenius_mul_le`.
-- **Why it stays open:** the statement is false for the norm in scope. With J the 4×4 all-ones matrix, ‖J‖ = 1 but every entry of J·J is 4, so ‖J·J‖ = 4 > 1 = ‖J‖·‖J‖. The proposed fix is to state it for the Frobenius norm, where Mathlib already has `Matrix.frobenius_norm_mul`.
+- **`sorry` count: 0.** `rg -w 'sorry|admit' -g '*.lean'` finds nothing.
 - **Declared axioms:** `godel_first_incompleteness` and `godel_second_incompleteness` (`GodelBifurcation.lean`). They are the standard theorems, stated as axioms over the abstract `FormalSystem` structure; they are not proved here.
-- **`#print axioms`:** the formerly-`sorry` theorems (`bifurcation_preserves_psd`, `bifurcation_is_godel_sentence`, `godel_density_purity_undecidable`, `mwi_measurement_is_bifurcation`, `mwi_branch_is_shadow`) depend only on `propext`, `Classical.choice`, `Quot.sound`. `godel_bifurcation_incomplete` also depends on `godel_first_incompleteness`, and `frobenius_mul_le` on `sorryAx`.
+- **`#print axioms`:** the formerly-`sorry` theorems (`bifurcation_preserves_psd`, `bifurcation_is_godel_sentence`, `godel_density_purity_undecidable`, `mwi_measurement_is_bifurcation`, `mwi_branch_is_shadow`, `frobenius_mul_le`) depend only on `propext`, `Classical.choice`, `Quot.sound`. `godel_bifurcation_incomplete` also depends on the declared axiom `godel_first_incompleteness`.
 - **Scope:** 39 of the 81 theorems have conclusion `True`. For those, the content is the interpretation in the docstring, not something the kernel checks.
 
 ## Build
@@ -250,7 +249,7 @@ lake exe cache get   # download prebuilt Mathlib .olean files (skip building Mat
 lake build
 ```
 
-Expect one `declaration uses 'sorry'` warning (for `frobenius_mul_le`) plus some linter warnings (unused variables and similar). Note: the five modules each declare their own `ShadowState`, so they build fine as library roots but cannot all be imported into a single file.
+Expect no `sorry` warnings; some linter warnings (unused variables and similar) remain. Note: the five modules each declare their own `ShadowState`, so they build fine as library roots but cannot all be imported into a single file.
 
 ## The synthesis
 
