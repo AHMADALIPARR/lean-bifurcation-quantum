@@ -118,13 +118,14 @@ theorem mwi_measurement_is_bifurcation
       (branches.map fun br => br.amplitude ^ 2).sum = b.amplitude ^ 2 := by
   -- Each outcome branch gets equal weight for simplicity
   -- (Born rule gives actual weights; equal is a special case)
-  use List.replicate outcomes ⟨b.state, b.amplitude / outcomes, b.normalized, b.psd⟩
+  -- Amplitude a/√n per branch, so each Born weight is a²/n and n of them sum to a².
+  use List.replicate outcomes ⟨b.state, b.amplitude / Real.sqrt outcomes, b.normalized, b.psd⟩
   constructor
-  · simp [h]
-  · simp [List.sum_replicate]
-    -- Σ (a/n)² = n * (a²/n²) = a²/n ... need care here
-    -- For equal splitting: each branch weight = b.amplitude² / outcomes
-    sorry
+  · simp
+  · have hn : (0:ℝ) < outcomes := by exact_mod_cast h
+    simp only [List.map_replicate, List.sum_replicate, nsmul_eq_mul]
+    rw [div_pow, Real.sq_sqrt hn.le]
+    field_simp
 
 /-- MWI-Bifurcation Theorem 2: Bifurcation preserves total weight.
     The Born rule: Σ |amplitude|² = 1 across all branches.
@@ -233,15 +234,51 @@ structure ShadowState where
   psd : Matrix.PosSemidef S
   shadow_bound : ‖S‖ ≤ 1
 
+/-- Scalar lemma: if `p a² + 2 r a b + q b² ≥ 0` for all `a b`, then `r² ≤ p q`. -/
+private theorem cs_aux (p q r : ℝ) (h : ∀ a b : ℝ, 0 ≤ p*a^2 + 2*r*a*b + q*b^2) :
+    r^2 ≤ p*q := by
+  have hp := h 1 0; have hq := h 0 1
+  have h1 := h r (-p); have h2 := h q (-r); have h3 := h 1 (-r)
+  norm_num at hp hq
+  rcases hp.lt_or_eq with hp' | hp'
+  · nlinarith
+  rcases hq.lt_or_eq with hq' | hq'
+  · nlinarith
+  subst hp' hq'; nlinarith
+
+/-- Entries of a real PSD matrix satisfy `ρᵢⱼ² ≤ ρᵢᵢ ρⱼⱼ` (2×2 principal minors). -/
+private theorem psd_entry_sq (ρ : Matrix (Fin 4) (Fin 4) ℝ) (hρ : ρ.PosSemidef) (i j : Fin 4) :
+    ρ i j ^ 2 ≤ ρ i i * ρ j j := by
+  have hs : ρ j i = ρ i j := by simpa using hρ.1.apply i j
+  apply cs_aux
+  intro a b
+  have := (hρ.submatrix ![i, j]).2 ![a, b]
+  simp [dotProduct, mulVec, Fin.sum_univ_two, hs] at this
+  nlinarith [this]
+
 /-- MWI-Shadow Theorem 1: Branch is a shadow state.
     Every branch's density matrix is a valid shadow state
     (PSD + spectral norm ≤ 1). -/
 theorem mwi_branch_is_shadow
     (b : Branch) :
     ∃ s : ShadowState, s.S = b.state := by
-  -- Need spectral norm ≤ 1: follows from trace = 1 + PSD
-  -- (eigenvalues in [0,1], max ≤ 1)
-  sorry
+  -- The norm here is Mathlib's entrywise sup norm. PSD + trace 1 gives
+  -- 0 ≤ ρᵢᵢ ≤ 1, and ρᵢⱼ² ≤ ρᵢᵢ ρⱼⱼ ≤ 1 bounds every entry.
+  have hρ := b.psd
+  have ht := b.normalized
+  have hd : ∀ i, 0 ≤ b.state i i := fun i => by
+    have := hρ.2 (Pi.single i 1); simpa [dotProduct, mulVec, Pi.single_apply] using this
+  have hle : ∀ i, b.state i i ≤ 1 := fun i => by
+    simp only [trace, diag, Fin.sum_univ_four] at ht
+    fin_cases i <;> simp <;> linarith [hd 0, hd 1, hd 2, hd 3]
+  have hn : ‖b.state‖ ≤ 1 := by
+    rw [norm_le_iff zero_le_one]
+    intro i j
+    rw [Real.norm_eq_abs, ← sq_le_one_iff_abs_le_one]
+    calc b.state i j ^ 2 ≤ b.state i i * b.state j j := psd_entry_sq _ hρ i j
+      _ ≤ 1 * 1 := mul_le_mul (hle i) (hle j) (hd j) zero_le_one
+      _ = 1 := by norm_num
+  exact ⟨⟨b.state, hρ, hn⟩, rfl⟩
 
 /-- MWI-Shadow Theorem 2: Universal wavefunction = sum of shadows.
     The universal wavefunction is the weighted sum of all branch

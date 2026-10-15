@@ -166,7 +166,10 @@ theorem trace_unitary_conj
 theorem frobenius_mul_le
     (A B : Matrix (Fin 4) (Fin 4) ℝ) :
     ‖A * B‖ ≤ ‖A‖ * ‖B‖ := by
-  -- Frobenius norm is submultiplicative
+  -- NOT PROVABLE AS STATED. The active instance `Matrix.normedAddCommGroup` is the
+  -- entrywise sup norm, not Frobenius. Counterexample: J = all-ones 4×4 matrix has
+  -- ‖J‖ = 1 but (J * J) i j = 4, so ‖J * J‖ = 4 > 1 = ‖J‖ * ‖J‖.
+  -- Fix: state it for the Frobenius norm (`Matrix.frobenius_norm_mul`).
   sorry
 
 /-- Quantum Theorem 3: Bifurcation preserves PSD. -/
@@ -177,10 +180,12 @@ theorem bifurcation_preserves_psd
     (η : ℝ) (hη : 0 < η) :
     Matrix.PosSemidef (S + η • grad) := by
   apply hS.add
-  -- η • grad is PSD for η ≥ 0: needs proof (no Mathlib lemma).
   -- PosSemidef is ⟨IsHermitian, ∀ x, 0 ≤ x⋆ ⬝ᵥ (M *ᵥ x)⟩.
-  -- For η • grad: Hermitian by smul, nonneg by η * (nonneg).
-  sorry
+  refine ⟨?_, fun x => ?_⟩
+  · show (η • grad)ᴴ = η • grad
+    rw [conjTranspose_smul, hgrad.1.eq, star_trivial]
+  · rw [smul_mulVec_assoc, dotProduct_smul]
+    exact smul_nonneg hη.le (hgrad.2 x)
 
 /-- Quantum Theorem 4: Shadow invariant preserved under projected steps. -/
 theorem shadow_invariant_preserved
@@ -213,5 +218,5 @@ CORRECTED version: Uses real Mathlib.
 - PSD lemmas: `PosSemidef.add`, `PosSemidef.smul` (real Mathlib)
 
 Proved: 11 theorems (projB_in_ball, projB_idempotent, 5 bifurcation, 5 quantum).
-Sorry: 1 (frobenius_mul_le — submultiplicativity needs Frobenius proof).
+Sorry: 1 (frobenius_mul_le — false for the entrywise sup norm actually in use; see proof comment).
 -/

@@ -120,10 +120,9 @@ theorem bifurcation_is_godel_sentence
     · exact hgrad
   constructor
   · exact Iff.rfl
-  · -- The system cannot prove this from inside: it's a Gödel sentence
-    -- (This is the philosophical content; the formal proof requires
-    --  the full Gödel machinery, which is beyond this file's scope.)
-    sorry
+  · -- `BifurcationSystem.Provable` is the constant-`False` stub, so this is immediate.
+    -- (The philosophical reading is in the docstring; no Gödel machinery is used.)
+    exact fun h => h
 
 /-!
 ## Gödel + Quantum
@@ -143,6 +142,28 @@ theorem godel_quantum_observer_limit
   let ⟨G, hG, h1, _⟩ := godel_first_incompleteness F h
   ⟨G, hG, h1⟩
 
+/-- Scalar lemma: if `p a² + 2 r a b + q b² ≥ 0` for all `a b`, then `r² ≤ p q`. -/
+private theorem cs_aux (p q r : ℝ) (h : ∀ a b : ℝ, 0 ≤ p*a^2 + 2*r*a*b + q*b^2) :
+    r^2 ≤ p*q := by
+  have hp := h 1 0; have hq := h 0 1
+  have h1 := h r (-p); have h2 := h q (-r); have h3 := h 1 (-r)
+  norm_num at hp hq
+  rcases hp.lt_or_eq with hp' | hp'
+  · nlinarith
+  rcases hq.lt_or_eq with hq' | hq'
+  · nlinarith
+  subst hp' hq'; nlinarith
+
+/-- Entries of a real PSD matrix satisfy `ρᵢⱼ² ≤ ρᵢᵢ ρⱼⱼ` (2×2 principal minors). -/
+private theorem psd_entry_sq (ρ : Matrix (Fin 4) (Fin 4) ℝ) (hρ : ρ.PosSemidef) (i j : Fin 4) :
+    ρ i j ^ 2 ≤ ρ i i * ρ j j := by
+  have hs : ρ j i = ρ i j := by simpa using hρ.1.apply i j
+  apply cs_aux
+  intro a b
+  have := (hρ.submatrix ![i, j]).2 ![a, b]
+  simp [dotProduct, mulVec, Fin.sum_univ_two, hs] at this
+  nlinarith [this]
+
 /-- Gödel-Quantum Theorem 2: Density matrices cannot prove their own purity.
     A density matrix ρ cannot, from within the formalism, prove that
     it is pure (rank 1) vs mixed. The distinction requires an external
@@ -154,9 +175,13 @@ theorem godel_density_purity_undecidable
     -- Either ρ is pure (Tr(ρ²) = 1) or mixed (Tr(ρ²) < 1),
     -- but the system cannot decide which from inside alone.
     Matrix.trace (ρ * ρ) ≤ 1 := by
-  -- Tr(ρ²) ≤ (Tr ρ)² = 1 for PSD ρ with eigenvalues in [0,1]
-  -- Equality iff pure. The system can prove the bound, not the case.
-  sorry
+  -- Tr(ρ²) = Σᵢⱼ ρᵢⱼ² ≤ Σᵢⱼ ρᵢᵢ ρⱼⱼ = (Tr ρ)² = 1, using ρᵢⱼ² ≤ ρᵢᵢ ρⱼⱼ.
+  have hs : ∀ i j, ρ j i = ρ i j := fun i j => by simpa using hρ_psd.1.apply i j
+  have e := fun i j => psd_entry_sq ρ hρ_psd i j
+  simp only [trace, diag, mul_apply, Fin.sum_univ_four] at hρ_trace ⊢
+  simp only [hs 1 0, hs 2 0, hs 3 0, hs 2 1, hs 3 1, hs 3 2]
+  have h1 : (ρ 0 0 + ρ 1 1 + ρ 2 2 + ρ 3 3) ^ 2 = 1 := by rw [hρ_trace]; norm_num
+  nlinarith [e 1 0, e 2 0, e 3 0, e 2 1, e 3 1, e 3 2]
 
 /-- Gödel-Quantum Theorem 3: The spectral norm cannot prove its own bound.
     The statement "‖ρ‖ ≤ 1" is provable, but the statement
